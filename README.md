@@ -9,9 +9,9 @@ dbases=(
 #---------------------+-------------------+--------------------+--------------------------------------+
 #    Ssh alias(addr)  |Dump folder(bkpath)|  DB name(dbname)   | Test DB name(dbtest) Must be unique! |
 #---------------------+-------------------+--------------------+--------------------------------------+
-#Example:
-#    'moscow'           '/backup'           'data_db'            'moscow_data_prod_db'
-#    'rybinsk'          '/backup/new'       'data_db'            'rybinsk_data_prod_db'
+    'moscow'           '/backup'           'data_db'            'moscow_data_prod_db'
+    'rybinsk'          '/backup/new'       'data_db'            'rybinsk_data_prod_db'
+    'yaroslavl'        '/dumps'            'data_db'            'yar_data_prod_db'
 
 ); N=${#dbases[*]}; C=4
 </pre>
