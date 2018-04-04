@@ -85,9 +85,9 @@ function check {
         printf "LocalFile:\t$dmpdir/$localdump ($mysize MB)\n"
         printf "LocalHash:\t$myhash\n"
 
-        dbconn=" -U $dbuser -h $dbhost -p $dbport $dbtest"
-        dropdb              $dbconn
-        createdb -O $dbuser $dbconn
+                             dbconn="-U $dbuser -h $dbhost -p $dbport $dbtest"
+        dropdb              $dbconn > /dev/null 2>> "$dbserr"
+        createdb -O $dbuser $dbconn > /dev/null 2>> "$dbserr"
 
         gunzip -c $dmpdir/$localdump | PGPASSWORD="$dbpass" psql -v ON_ERROR_STOP=1 $dbconn > /dev/null \
             2>> "$dbserr" || { printf "${db_error[*]}"; cat "$dbserr"; continue; }
