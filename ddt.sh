@@ -7,7 +7,9 @@ subjct="DDT"               # Email options - subject
 mailto="user@pisem.net"    # Email options - address
 mydate=$(date +'%d.%m.%Y') # Date to search dumps
 dbhost=192.168.0.1         # DB server to test dump
+dbport=5432                # DB server port
 dbuser=dbuser              # User of test DB server
+dbpass=password            # DB user password
 hasher=sha1sum             # Hash algorithm
 dbases=(
 #---------------------+-------------------+--------------------+--------------------------------------+
@@ -20,26 +22,26 @@ dbases=(
 ); N=${#dbases[*]}; C=4
 
 dl_error=(''
-    ' ____  _____   ___   _  ____   \n'
-    '|  _ \/ __\ \ / / \ | |/ ___|  \n'
-    '| |_) \___ \ V /|  \| | |      \n'
-    '|  _ < ___) | | | |\  | |___   \n'
-    '|_|_\_\____/|_| |_| \_|\____|_ \n'
-    '| ____|  _ \  _ \/ _ \|  _ \| |\n'
-    '|  _| | |_) ||_) || | | |_) | |\n'
-    '| |___|  _ <  _ < |_| |  _ <|_|\n'
-    '|_____|_| \_\| \_\___/|_| \_(_)\n')
+    ' ____  _____   ___   _  ____ \n'
+    '|  _ \/ __\ \ / / \ | |/ ___|\n'
+    '| |_) \___ \ V /|  \| | |    \n'
+    '|  _ < ___) | | | |\  | |___ \n'
+    '|_|_\_\____/|_| |_|_\_|\____|\n'
+    '| ____| _ \  _ \/ _ |  _ \| |\n'
+    '|  _|| |_) ||_) || || |_) | |\n'
+    '| |__|  _ <  _ < |_||  _ <|_|\n'
+    '|_____|| \_\| \_\___|_| \_(_)\n')
 
 db_error=(''
-    ' ____  ____   _____         _   \n'
-    '|  _ \| __ ) |_   _|__  ___| |_ \n'
-    '| | | |  _ \   | |/ _ \/ __| __|\n'
-    '| |_| | |_) |  | |  __/\__ \ |_ \n'
-    '|____/|____/___|_|\___||___/\__|\n'
-    '| ____|  _ \  _ \/ _ \|  _ \| | \n'
-    '|  _| | |_) ||_) || | | |_) | | \n'
-    '| |___|  _ <  _ < |_| |  _ <|_| \n'
-    '|_____|_| \_\| \_\___/|_| \_(_) \n')
+    ' ____  ____ _____        _   \n'
+    '|  _ \| __ )_   _|_  ___| |_ \n'
+    '| | | |  _ \ | / _ \/ __| __|\n'
+    '| |_| | |_) || | __/\__ \ |_ \n'
+    '|____/|____/_|_|___||___/\__|\n'
+    '| ____| _ \  _ \/ _ |  _ \| |\n'
+    '|  _|| |_) ||_) || || |_) | |\n'
+    '| |__|  _ <  _ < |_||  _ <|_|\n'
+    '|_____|| \_\| \_\___|_| \_(_)\n')
 
 [[ -f "$dlderr" ]] && rm "$dlderr"
 [[ -f "$dbserr" ]] && rm "$dbserr"
@@ -83,11 +85,12 @@ function check {
 		printf "LocalFile:\t$dmpdir/$localdump ($mysize MB)\n"
 		printf "LocalHash:\t$myhash\n"
 
-		dropdb   -h $dbhost -U $dbuser            $dbtest
-		createdb -h $dbhost -U $dbuser -O $dbuser $dbtest
+        dbconn="-h $dbhost -p $dbport -U $dbuser"
+		dropdb   $dbconn            $dbtest
+		createdb $dbconn -O $dbuser $dbtest
 
-		gunzip -c $dmpdir/$localdump | psql -v ON_ERROR_STOP=1 -h $dbhost -U $dbuser $dbtest > /dev/null 2>> "$dbserr" \
-			|| { printf "${db_error[*]}"; cat "$dbserr"; continue; }
+		gunzip -c $dmpdir/$localdump | PGPASSWORD="$dbpass" psql -v ON_ERROR_STOP=1 $dbconn $dbtest > /dev/null \
+            2>> "$dbserr" || { printf "${db_error[*]}"; cat "$dbserr"; continue; }
 
 		printf "\nCheck complete!)\n"
 
