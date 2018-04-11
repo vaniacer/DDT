@@ -1,17 +1,19 @@
 #!/bin/bash
 
-dmpdir=~/dumps             # Dir to store dumps
-dlderr=~/logs/dlderr       # Download errors file
-dbserr=~/logs/dbserr       # DB test errors file
-subjct="DDT"               # Email options - subject
-mailto="user@pisem.net"    # Email options - address
-mydate=$(date +'%d.%m.%Y') # Date to search dumps
-dbhost=192.168.0.1         # DB server to test dump
-dbport=5432                # DB server port
-dbuser=dbuser              # User of test DB server
-dbpass=password            # DB user password
-hasher=sha1sum             # Hash algorithm
-dbases=(
+dmpdir=~/dumps                            # Dir to store dumps
+dlderr=~/logs/dlderr                      # Download errors file
+dbserr=~/logs/dbserr                      # DB test errors file
+subjct="DDT"                              # Email options - subject
+mailto="user@pisem.net"                   # Email options - address
+mydate=$(date +'%d.%m.%Y')                # Date to search dumps
+hasher=sha1sum                            # Hash algorithm
+dbhost=192.168.0.1                        # DB server to test dump
+dbport=5432                               # DB server port
+dbuser=dbuser                             # User of test DB server
+dbpass=password                           # DB user password
+dbconf="-U $dbuser -h $dbhost -p $dbport" # DB connection parameters                       # Terminate connections to DB
+dbterm="SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$dbtest';" # if PostgreSQL ver. <= 9.1
+dbases=(                                                                                   # change 'pid' to 'procpid'
 #---------------------+-------------------+--------------------+--------------------------------------+
 #    Ssh alias(addr)  |Dump folder(bkpath)|  DB name(dbname)   | Test DB name(dbtest) Must be unique! |
 #---------------------+-------------------+--------------------+--------------------------------------+
@@ -85,11 +87,9 @@ function check {
         printf "LocalFile:\t$dmpdir/$localdump ($mysize MB)\n"
         printf "LocalHash:\t$myhash\n"
 
-              dbconf="-U $dbuser -h $dbhost -p $dbport"
-        psql $dbconf  -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$dbtest';"
-
-        dropdb  --if-exists $dbconf $dbtest > /dev/null 2>> "$dbserr"
-        createdb -O $dbuser $dbconf $dbtest > /dev/null 2>> "$dbserr"
+        psql     $dbconf     <<<     $dbterm > /dev/null 2>> "$dbserr" # Drop test DB connections
+        dropdb   $dbconf --if-exists $dbtest > /dev/null 2>> "$dbserr" # Drop test DB if exists
+        createdb $dbconf -O  $dbuser $dbtest > /dev/null 2>> "$dbserr" # Create test DB
 
         gunzip -c $dmpdir/$localdump | psql -v ON_ERROR_STOP=1 $dbconf $dbtest > /dev/null 2>> "$dbserr" \
             || { printf "${db_error[*]}"; cat "$dbserr"; continue; }
