@@ -27,10 +27,10 @@ dl_error=(''
     '| |_) \___ \ V /|  \| | |    \n'
     '|  _ < ___) | | | |\  | |___ \n'
     '|_|_\_\____/|_| |_|_\_|\____|\n'
-    '| ____| _ \  _ \/ _ |  _ \| |\n'
-    '|  _|| |_) ||_) || || |_) | |\n'
-    '| |__|  _ <  _ < |_||  _ <|_|\n'
-    '|_____|| \_\| \_\___|_| \_(_)\n')
+    '| ____| _ \  _ \/ _ \  _ \| |\n'
+    '|  _|| |_) ||_) || | ||_) | |\n'
+    '| |__|  _ <  _ < |_| | _ <|_|\n'
+    '|_____|| \_\| \_\___/_| \_(_)\n')
 
 db_error=(''
     ' ____  ____ _____        _   \n'
@@ -38,10 +38,10 @@ db_error=(''
     '| | | |  _ \ | / _ \/ __| __|\n'
     '| |_| | |_) || | __/\__ \ |_ \n'
     '|____/|____/_|_|___||___/\__|\n'
-    '| ____| _ \  _ \/ _ |  _ \| |\n'
-    '|  _|| |_) ||_) || || |_) | |\n'
-    '| |__|  _ <  _ < |_||  _ <|_|\n'
-    '|_____|| \_\| \_\___|_| \_(_)\n')
+    '| ____| _ \  _ \/ _ \  _ \| |\n'
+    '|  _|| |_) ||_) || | ||_) | |\n'
+    '| |__|  _ <  _ < |_| | _ <|_|\n'
+    '|_____|| \_\| \_\___/_| \_(_)\n')
 
 [[ -f "$dlderr" ]] && rm "$dlderr"
 [[ -f "$dbserr" ]] && rm "$dbserr"
@@ -85,12 +85,14 @@ function check {
         printf "LocalFile:\t$dmpdir/$localdump ($mysize MB)\n"
         printf "LocalHash:\t$myhash\n"
 
-                             dbconn="-U $dbuser -h $dbhost -p $dbport $dbtest"
-        dropdb              $dbconn > /dev/null 2>> "$dbserr"
-        createdb -O $dbuser $dbconn > /dev/null 2>> "$dbserr"
+              dbconf="-U $dbuser -h $dbhost -p $dbport"
+        psql $dbconf  -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$dbtest';"
 
-        gunzip -c $dmpdir/$localdump | PGPASSWORD="$dbpass" psql -v ON_ERROR_STOP=1 $dbconn > /dev/null \
-            2>> "$dbserr" || { printf "${db_error[*]}"; cat "$dbserr"; continue; }
+        dropdb  --if-exists $dbconf $dbtest > /dev/null 2>> "$dbserr"
+        createdb -O $dbuser $dbconf $dbtest > /dev/null 2>> "$dbserr"
+
+        gunzip -c $dmpdir/$localdump | psql -v ON_ERROR_STOP=1 $dbconf $dbtest > /dev/null 2>> "$dbserr" \
+            || { printf "${db_error[*]}"; cat "$dbserr"; continue; }
 
         printf "\nCheck complete!)\n"
 
