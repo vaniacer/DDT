@@ -11,9 +11,8 @@ dbhost=192.168.0.1                        # DB server to test dump
 dbport=5432                               # DB server port
 dbuser=dbuser                             # User of test DB server
 dbpass=password                           # DB user password
-dbconf="-U $dbuser -h $dbhost -p $dbport" # DB connection parameters                       # Terminate connections to DB
-dbterm="SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$dbtest';" # if PostgreSQL ver. <= 9.1
-dbases=(                                                                                   # change 'pid' to 'procpid'
+dbconf="-U $dbuser -h $dbhost -p $dbport" # DB connection parameters
+dbases=(
 #---------------------+-------------------+--------------------+--------------------------------------+
 #    Ssh alias(addr)  |Dump folder(bkpath)|  DB name(dbname)   | Test DB name(dbtest) Must be unique! |
 #---------------------+-------------------+--------------------+--------------------------------------+
@@ -62,6 +61,12 @@ function check {
     for ((i=0; i<$N; i+=$C)); do printf '\n----------------------------------------------\n'
 
         read addr bkpath dbname dbtest <<< ${dbases[@]:$i:$C}
+        # Restrict connections to test DB
+        # Terminate connections to test DB if PostgreSQL ver. <= 9.1 change 'pid' to 'procpid'
+        # Then drop test DB and create new test DB
+        dbterm="ALTER DATABASE $dbtest ALLOW_CONNECTIONS false;
+                SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$dbtest';"
+
         printf "Date\Time:\t$(date +'%d.%m.%Y %R')\n"
         printf "DBServer:\t$addr\n"
         printf "DBName:\t\t$dbname\n"
@@ -87,9 +92,10 @@ function check {
         printf "LocalFile:\t$dmpdir/$localdump ($mysize MB)\n"
         printf "LocalHash:\t$myhash\n"
 
-        psql     $dbconf     <<<     $dbterm > /dev/null 2>> "$dbserr" # Drop test DB connections
-        dropdb   $dbconf --if-exists $dbtest > /dev/null 2>> "$dbserr" # Drop test DB if exists
-        createdb $dbconf -O  $dbuser $dbtest > /dev/null 2>> "$dbserr" # Create test DB
+        # Drop test DB connections, drop DB and create DB
+        psql     $dbconf -c        "$dbterm" > /dev/null 2>> "$dbserr"
+        dropdb   $dbconf            $dbtest  > /dev/null 2>> "$dbserr"
+        createdb $dbconf -O $dbuser $dbtest  > /dev/null 2>> "$dbserr"
 
         gunzip -c $dmpdir/$localdump | psql -v ON_ERROR_STOP=1 $dbconf $dbtest > /dev/null 2>> "$dbserr" \
             || { printf "${db_error[*]}"; cat "$dbserr"; continue; }
