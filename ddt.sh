@@ -50,7 +50,7 @@ db_error=(''
 function download {
     for ((j=0; j<10; j++)); do
 
-        rsync -P -e ssh $addr:$bkpath/$dump $dmpdir/$localdump > /dev/null 2>> "$dlderr" \
+        rsync -Pqz $addr:"$bkpath/$dump" "$dmpdir/$localdump" > /dev/null 2>> "$dlderr" \
             && { printf "\nDownload complete."; return; }
         sleep 5
 
@@ -64,26 +64,27 @@ function check {
         # Restrict connections to test DB
         # Terminate connections to test DB if PostgreSQL ver. <= 9.1 change 'pid' to 'procpid'
         # Then drop test DB and create new test DB
-        dbterm="ALTER DATABASE $dbtest ALLOW_CONNECTIONS false;
-                SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$dbtest';"
+        dbterm="
+        ALTER DATABASE $dbtest ALLOW_CONNECTIONS false;
+        SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$dbtest';"
 
         printf "Date\Time:\t$(date +'%d.%m.%Y %R')\n"
         printf "DBServer:\t$addr\n"
         printf "DBName:\t\t$dbname\n"
 
-        dump=`ssh $addr ls $bkpath | grep ${dbname}_$mydate.*.gz` \
+        dump=$(ssh $addr ls $bkpath | grep ${dbname}_$mydate.*.gz) \
             || { printf "\nDump not found for the current date($mydate)!\n"; continue; }
         localdump=${dbtest}_$mydate.gz
 
-        size=(`ssh $addr du   -m $bkpath/$dump`); size=${size[0]}
-        hash=(`ssh $addr $hasher $bkpath/$dump`); hash=${hash[0]}
+        size=(`ssh $addr du   -m "$bkpath/$dump"`); size=${size[0]}
+        hash=(`ssh $addr $hasher "$bkpath/$dump"`); hash=${hash[0]}
 
         printf "RemoteFile:\t$bkpath/$dump ($size MB)\n"
         printf "RemoteHash:\t$hash\n"
 
         download
-        mysize=(`du   -m $dmpdir/$localdump`); mysize=${mysize[0]}
-        myhash=(`$hasher $dmpdir/$localdump`); myhash=${myhash[0]}
+        mysize=(`du   -m "$dmpdir/$localdump"`); mysize=${mysize[0]}
+        myhash=(`$hasher "$dmpdir/$localdump"`); myhash=${myhash[0]}
 
         [[ $hash = $myhash ]] \
             && { printf " Hash checked!)\n\n"; } \
@@ -97,7 +98,7 @@ function check {
         dropdb   $dbconf            $dbtest  > /dev/null 2>> "$dbserr"
         createdb $dbconf -O $dbuser $dbtest  > /dev/null 2>> "$dbserr"
 
-        gunzip -c $dmpdir/$localdump | psql -v ON_ERROR_STOP=1 $dbconf $dbtest > /dev/null 2>> "$dbserr" \
+        gunzip -c "$dmpdir/$localdump" | psql -v ON_ERROR_STOP=1 $dbconf $dbtest > /dev/null 2>> "$dbserr" \
             || { printf "${db_error[*]}"; cat "$dbserr"; continue; }
 
         printf "\nCheck complete!)\n"
@@ -105,5 +106,6 @@ function check {
     done
 }
 
-check | mutt -s "$subjct" "$mailto"
-
+exec 5>&1
+message=$(check|tee /dev/fd/5)
+mutt -s "$subjct" "$mailto" <<< "$message"
