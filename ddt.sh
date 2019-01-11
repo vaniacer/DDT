@@ -72,8 +72,9 @@ function check {
         printf "DBServer:\t$addr\n"
         printf "DBName:\t\t$dbname\n"
 
-        dump=$(ssh $addr ls $bkpath | grep ${dbname}_$mydate.*.gz) \
+        dump=($(ssh $addr ls -t $bkpath | grep ${dbname}_$mydate.*.gz)) \
             || { printf "\nDump not found for the current date($mydate)!\n"; continue; }
+        dump=${dump[0]}
         localdump=${dbtest}_$mydate.gz
 
         size=(`ssh $addr du   -m "$bkpath/$dump"`); size=${size[0]}
