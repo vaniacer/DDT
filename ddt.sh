@@ -66,7 +66,7 @@ function check {
         ALTER DATABASE $dbtest ALLOW_CONNECTIONS false;
         SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$dbtest';"
 
-        "Date\Time:\t%(%d.%m.%Y %R)T\n"
+        printf "Date\Time:\t%(%d.%m.%Y %R)T\n"
         printf "DBServer:\t$addr\n"
 
         dump=( $(ssh $addr ls -t $bkpath | grep $(date +${dbname}).*.gz) )) \
