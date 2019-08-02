@@ -6,6 +6,7 @@ dbases=(
 #-----------------------+-------------------+-----------------------------+--------------------------------------+
 #      'moscow'             '/backup'           'data_db_%d.%m.%Y'                   'moscow_data_prod_db'
 #      'rybinsk'            '/backup/new'       '%Y%m%d_db_data'                     'rybinsk_data_prod_db'
+#      'yaroslavl'          '/dumps'            'data_db%Y'                          'yar_data_prod_db'
 #-----------------------+-------------------+-----------------------------+--------------------------------------+
 ); N=${#dbases[*]}; C=4
 
@@ -104,6 +105,6 @@ function check {
     done
 }
 
-exec 5>&1
-message=$(check|tee /dev/fd/5)
+exec 5>&1                       # Need this to log output in a file by other software
+message=$(check|tee /dev/fd/5)  # If you don't need to log output then remove 'exec 5>&1' and change message=$(check)
 mutt -s "$subjct" "$mailto" <<< "$message"
