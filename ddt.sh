@@ -4,9 +4,9 @@ dbases=(
 #-----------------------+-------------------+-----------------------------+--------------------------------------+
 #    Ssh alias(addr)    |Dump folder(bkpath)| Dump search pattern(dbname) | Test DB name(dbtest) Must be unique! |
 #-----------------------+-------------------+-----------------------------+--------------------------------------+
-#      'moscow'             '/backup'           'data_db_%d.%m.%Y'                   'moscow_data_prod_db'
-#      'rybinsk'            '/backup/new'       '%Y%m%d_db_data'                     'rybinsk_data_prod_db'
-#      'yaroslavl'          '/dumps'            'data_db%Y'                          'yar_data_prod_db'
+#      'moscow'             '/backup'             'data_db_%d.%m.%Y'               'moscow_data_prod_db'
+#      'rybinsk'            '/backup/new'         '%Y%m%d_db_data'                 'rybinsk_data_prod_db'
+#      'yaroslavl'          '/dumps'              'data_db%Y'                      'yar_data_prod_db'
 #-----------------------+-------------------+-----------------------------+--------------------------------------+
 ); N=${#dbases[*]}; C=4
 
@@ -22,6 +22,18 @@ dbport=5432                               # DB server port
 dbuser=dbuser                             # User of test DB server
 dbpass=password                           # DB user password
 dbconf="-U $dbuser -h $dbhost -p $dbport" # DB connection parameters
+
+dmeror=(''
+    ' ___ __  __ ___         _    \n'               
+    '|   \  \/  | _ \ ___ __| |_  \n'  
+    '| || ||\/| ||_) / __/__| _ \\\n'
+    '| || ||  | | __/\__ \_ \| | |\n'
+    '|___/_|__|_||__ |___/__/| |_|\n'
+    '| ____| _ \  _ \/ _ \  _ \| |\n'
+    '|  _|| |_) ||_) || | ||_) | |\n'
+    '| |__|  _ <  _ < |_| | _ <|_|\n'
+    '|_____|| \_\| \_\___/_| \_(_)\n')
+
 dleror=(''
     ' ____  _____   ___   _  ____ \n'
     '|  _ \/ __\ \ / / \ | |/ ___|\n'
@@ -32,6 +44,7 @@ dleror=(''
     '|  _|| |_) ||_) || | ||_) | |\n'
     '| |__|  _ <  _ < |_| | _ <|_|\n'
     '|_____|| \_\| \_\___/_| \_(_)\n')
+
 dberor=(''
     ' ____  ____ _____        _   \n'
     '|  _ \| __ )_   _|_  ___| |_ \n'
@@ -70,8 +83,8 @@ function check {
         printf "Date\Time:\t%(%d.%m.%Y %R)T\n"
         printf "DBServer:\t$addr\n"
 
-        dump=( $(ssh $addr ls -t $bkpath | grep $(date +${dbname}).*.gz) )) \
-            || { printf "\nDump not found for the current date($mydate)!\n"; continue; }
+        dump=( $(ssh $addr ls -t $bkpath | grep $(date +${dbname}).*.gz) ) \
+            || { printf "${dmeror[*]}\nDump not found for the current date($mydate)!\n"; continue; }
         dump=${dump[0]}
         localdump=${dbtest}_$mydate.gz
 
