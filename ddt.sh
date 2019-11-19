@@ -1,14 +1,16 @@
 #!/bin/bash
 
-dbases=(
-#-----------------------+-------------------+-----------------------------+--------------------------------------+
-#    Ssh alias(addr)    |Dump folder(bkpath)| Dump search pattern(dbname) | Test DB name(dbtest) Must be unique! |
-#-----------------------+-------------------+-----------------------------+--------------------------------------+
-#      'moscow'             '/backup'             'data_db_%d.%m.%Y'               'moscow_data_prod_db'
-#      'rybinsk'            '/backup/new'         '%Y%m%d_db_data'                 'rybinsk_data_prod_db'
-#      'yaroslavl'          '/dumps'              'data_db%Y'                      'yar_data_prod_db'
-#-----------------------+-------------------+-----------------------------+--------------------------------------+
-); N=${#dbases[*]}; C=4
+D () { date +$1; }; dbases=(
+#-----------------+---------------------------+---------------------------+-------------+---------------------------+
+# Ssh alias(addr) |    Dump folder(bkpath)    |Dump search pattern(dbname)|Dump ext\type|Unique test DB name(dbtest)|
+#-----------------+---------------------------+---------------------------+-------------+---------------------------+
+
+#    'moscow'         "/backup/$(D '%d-%m')"       'data_db_%d.%m.%Y'          'gz'          'moscow_data_prod_db'
+#    'rybinsk'        '/backup/new'                '%Y%m%d_db_data'            'dump'        'rybinsk_data_prod_db'
+#    'yaroslavl'      '/dumps'                     'data_db%Y'                 'dmp'         'yar_data_prod_db'
+
+#-----------------+---------------------------+---------------------------+-------------+---------------------------+
+); N=${#dbases[*]}; C=5
 
 dmpdir=~/dumps                            # Dir to store dumps
 dlderr=~/logs/dlderr                      # Download errors file
@@ -72,7 +74,7 @@ function download {
 function check {
     for ((i=0; i<$N; i+=$C)); do printf '\n----------------------------------------------\n'
 
-        read addr bkpath dbname dbtest <<< ${dbases[@]:$i:$C}
+        read addr bkpath dbname ext dbtest <<< ${dbases[@]:$i:$C}
         # Restrict connections to test DB
         # Terminate connections to test DB if PostgreSQL ver. <= 9.1 change 'pid' to 'procpid'
         # Then drop test DB and create new test DB
@@ -83,10 +85,10 @@ function check {
         printf "Date\Time:\t%(%d.%m.%Y %R)T\n"
         printf "DBServer:\t$addr\n"
 
-        dump=( $(ssh $addr ls -t $bkpath | grep $(date +${dbname}).*.gz) ) \
+        dump=( $(ssh $addr ls -t $bkpath | grep $(date +${dbname}).*.$ext) ) \
             || { printf "${dmeror[*]}\nDump not found for the current date($mydate)!\n"; continue; }
         dump=${dump[0]}
-        localdump=${dbtest}_$mydate.gz
+        localdump=${dbtest}_$mydate.$ext
 
         size=( $(ssh $addr du   -m "$bkpath/$dump") ); size=${size[0]}
         hash=( $(ssh $addr $hasher "$bkpath/$dump") ); hash=${hash[0]}
@@ -110,8 +112,14 @@ function check {
         dropdb   $dbconf            $dbtest  > /dev/null 2>> "$dbserr"
         createdb $dbconf -O $dbuser $dbtest  > /dev/null 2>> "$dbserr"
 
-        gunzip -c "$dmpdir/$localdump" | psql -v ON_ERROR_STOP=1 $dbconf $dbtest > /dev/null 2>> "$dbserr" \
-            || { printf "${dberor[*]}"; cat "$dbserr"; continue; }
+        # Check dump type and test
+        type=$(file "$dmpdir/$localdump")
+        case $type in
+            *gzip*) gunzip -c "$dmpdir/$localdump" | psql -v ON_ERROR_STOP=1 $dbconf $dbtest > /dev/null 2>> "$dbserr" \
+                        || { printf "${dberor[*]}"; cat "$dbserr"; continue; };;
+            *PostgreSQL*) pg_restore $dbconf -Oxe -d $dbtest "$dmpdir/$localdump" > /dev/null 2>> "$dbserr" \
+                        || { printf "${dberor[*]}"; cat "$dbserr"; continue; };;
+        esac
 
         printf "\nCheck complete!)\n"
 
