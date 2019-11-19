@@ -5,9 +5,9 @@ dbases=(
 # Ssh alias(addr) |    Dump folder(bkpath)    |Dump search pattern(dbname)|Dump ext\type|Unique test DB name(dbtest)|
 #-----------------+---------------------------+---------------------------+-------------+---------------------------+
 
-#    'moscow'         '/backup/%d-%m'              'data_db_%d.%m.%Y'          'gz'          'moscow_data_prod_db'
-#    'rybinsk'        '/backup/new'                '%Y%m%d_db_data'            'dump'        'rybinsk_data_prod_db'
-#    'yaroslavl'      '/dumps'                     'data_db%Y'                 'dmp'         'yar_data_prod_db'
+#    'moscow'         '/backup/%d-%m'              'data_db_%d.%m.%Y'         'gz'          'moscow_data_prod_db'
+#    'rybinsk'        '/backup/new'                '%Y%m%d_db_data'           'dump'        'rybinsk_data_prod_db'
+#    'yaroslavl'      '/dumps'                     'data_db%Y'                'dmp'         'yar_data_prod_db'
 
 #-----------------+---------------------------+---------------------------+-------------+---------------------------+
 ); N=${#dbases[*]}; C=5
@@ -88,7 +88,6 @@ function check {
         bkpath="$(date +${bkpath})"
         dump=( $(ssh $addr ls -t "$bkpath" | grep $(date +${dbname}).*.$ext) ) \
             || { printf "${dmeror[*]}\nDump not found for the current date($mydate)!\n"; continue; }
-        dump=${dump[0]}
         localdump=${dbtest}_$mydate.$ext
 
         size=( $(ssh $addr du   -m "$bkpath/$dump") ); size=${size[0]}
