@@ -62,9 +62,9 @@ function download {
     rerr=
     for ((j=0; j<10; j++)); do
         rerr=$(rsync -Pqz $addr:"$bkpath/$dump" "$dmpdir/$localdump" 2>&1 > /dev/null) \
-            && { printf "\nDownload complete."; return; }
+            && { printf "\nDownload complete."; return 0; }
         sleep 5
-    done; printf "${dleror[*]}\n$rerr"; continue
+    done; printf "${dleror[*]}\n$rerr"; return 1
 }
 
 function check {
@@ -92,7 +92,7 @@ function check {
         printf "RemoteFile:\t$bkpath/$dump ($size MB)\n"
         printf "RemoteHash:\t$hash\n"
 
-        download
+        download || continue
         mysize=( $(du   -m "$dmpdir/$localdump") ); mysize=${mysize[0]}
         myhash=( $($hasher "$dmpdir/$localdump") ); myhash=${myhash[0]}
 
