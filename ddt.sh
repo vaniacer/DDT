@@ -1,11 +1,11 @@
 #!/bin/bash
 
-D () { date +$1; }; dbases=(
+dbases=(
 #-----------------+---------------------------+---------------------------+-------------+---------------------------+
 # Ssh alias(addr) |    Dump folder(bkpath)    |Dump search pattern(dbname)|Dump ext\type|Unique test DB name(dbtest)|
 #-----------------+---------------------------+---------------------------+-------------+---------------------------+
 
-#    'moscow'         "/backup/$(D '%d-%m')"       'data_db_%d.%m.%Y'          'gz'          'moscow_data_prod_db'
+#    'moscow'         '/backup/%d-%m'              'data_db_%d.%m.%Y'          'gz'          'moscow_data_prod_db'
 #    'rybinsk'        '/backup/new'                '%Y%m%d_db_data'            'dump'        'rybinsk_data_prod_db'
 #    'yaroslavl'      '/dumps'                     'data_db%Y'                 'dmp'         'yar_data_prod_db'
 
@@ -85,7 +85,8 @@ function check {
         printf "Date\Time:\t%(%d.%m.%Y %R)T\n"
         printf "DBServer:\t$addr\n"
 
-        dump=( $(ssh $addr ls -t $bkpath | grep $(date +${dbname}).*.$ext) ) \
+        bkpath="$(date +${bkpath})"
+        dump=( $(ssh $addr ls -t "$bkpath" | grep $(date +${dbname}).*.$ext) ) \
             || { printf "${dmeror[*]}\nDump not found for the current date($mydate)!\n"; continue; }
         dump=${dump[0]}
         localdump=${dbtest}_$mydate.$ext
