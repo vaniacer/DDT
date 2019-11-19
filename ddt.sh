@@ -58,17 +58,13 @@ dberor=(''
     '| |__|  _ <  _ < |_| | _ <|_|\n'
     '|_____|| \_\| \_\___/_| \_(_)\n')
 
-[[ -f "$dlderr" ]] && rm "$dlderr"
-[[ -f "$dbserr" ]] && rm "$dbserr"
-
 function download {
+    rerr=
     for ((j=0; j<10; j++)); do
-
-        rsync -Pqz $addr:"$bkpath/$dump" "$dmpdir/$localdump" > /dev/null 2>> "$dlderr" \
+        rerr=$(rsync -Pqz $addr:"$bkpath/$dump" "$dmpdir/$localdump" 2>&1 > /dev/null) \
             && { printf "\nDownload complete."; return; }
         sleep 5
-
-    done; printf "${dleror[*]}"; cat "$dlderr"; continue
+    done; printf "${dleror[*]}\n$rerr"; continue
 }
 
 function check {
@@ -113,13 +109,14 @@ function check {
         createdb $dbconf -O $dbuser $dbtest  > /dev/null 2>> "$dbserr"
 
         # Check dump type and test
-        type=$(file "$dmpdir/$localdump")
+        terr=
+        dump="$dmpdir/$localdump"
+        type=$(file "$dump")
         case $type in
-            *gzip*) gunzip -c "$dmpdir/$localdump" | psql -v ON_ERROR_STOP=1 $dbconf $dbtest > /dev/null 2>> "$dbserr" \
-                        || { printf "${dberor[*]}"; cat "$dbserr"; continue; };;
-            *PostgreSQL*) pg_restore $dbconf -Oxe -d $dbtest "$dmpdir/$localdump" > /dev/null 2>> "$dbserr" \
-                        || { printf "${dberor[*]}"; cat "$dbserr"; continue; };;
+                  *gzip*) terr=$(gunzip -c "$dump" | psql -v ON_ERROR_STOP=1 $dbconf $dbtest 2>&1 > /dev/null);;
+            *PostgreSQL*) terr=$(pg_restore $dbconf -Oxe -d $dbtest "$dump" 2>&1 > /dev/null);;
         esac
+        [[ $terr ]] && printf "${dberor[*]}\n$terr"
 
         printf "\nCheck complete!)\n"
 
