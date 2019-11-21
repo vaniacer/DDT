@@ -4,11 +4,9 @@ dbases=(
 #-----------------+---------------------------+---------------------------+-------------+---------------------------+
 # Ssh alias(addr) |    Dump folder(bkpath)    |Dump search pattern(dbname)|Dump ext\type|Unique test DB name(dbtest)|
 #-----------------+---------------------------+---------------------------+-------------+---------------------------+
-
-#    'moscow'         '/backup/%d-%m'              'data_db_%d.%m.%Y'         'gz'          'moscow_data_prod_db'
-#    'rybinsk'        '/backup/new'                '%Y%m%d_db_data'           'dump'        'rybinsk_data_prod_db'
-#    'yaroslavl'      '/dumps'                     'data_db%Y'                'dmp'         'yar_data_prod_db'
-
+    'moscow'         '/backup/%d-%m'              'data_db_%d.%m.%Y'         'gz'          'moscow_data_prod_db'
+    'rybinsk'        '/backup/new'                '%Y%m%d_db_data'           'dump'        'rybinsk_data_prod_db'
+    'yaroslavl'      '/dumps'                     'data_db%Y'                'dmp'         'yar_data_prod_db'
 #-----------------+---------------------------+---------------------------+-------------+---------------------------+
 ); N=${#dbases[*]}; C=5
 
