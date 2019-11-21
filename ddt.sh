@@ -58,16 +58,17 @@ dberor=(''
     '| |__|  _ <  _ < |_| | _ <|_|\n'
     '|_____|| \_\| \_\___/_| \_(_)\n')
 
-function download {
+download () {
     rerr=
-    for ((j=0; j<10; j++)); do
+    for j in {0..9}; {
         rerr=$(rsync -Pqz $addr:"$bkpath/$dump" "$dmpdir/$localdump" 2>&1 > /dev/null) \
-            && { printf "\nDownload complete."; return 0; }
-        sleep 5
-    done; printf "${dleror[*]}\n$rerr"; return 1
+            && { printf "\nDownload complete."; return 0; } \
+            || sleep 5
+    }
+    printf "${dleror[*]}\n$rerr"; return 1
 }
 
-function check {
+check () {
     for ((i=0; i<$N; i+=$C)); do printf '\n----------------------------------------------\n'
 
         read addr bkpath dbname ext dbtest <<< ${dbases[@]:$i:$C}
