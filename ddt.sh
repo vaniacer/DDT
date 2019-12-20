@@ -60,7 +60,7 @@ download () {
     rerr=
     for j in {0..9}; {
         rerr=$(rsync -Pqz $addr:"$bkpath/$dump" "$dmpdir/$localdump" 2>&1 > /dev/null) \
-            && { printf "\nDownload complete."; return 0; } \
+            && { printf "\nDownload complete.\n"; return 0; } \
             || sleep 5
     }
     printf "${dleror[*]}\n$rerr"; return 1
