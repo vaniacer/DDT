@@ -1,5 +1,4 @@
 #!/bin/bash
-
 dbases=(
 #-----------------+---------------------------+---------------------------+-------------+---------------------------+
 # Ssh alias(addr) |    Dump folder(bkpath)    |Dump search pattern(dbname)|Dump ext\type|Unique test DB name(dbtest)|
@@ -22,7 +21,7 @@ dbport=5432                               # DB server port
 dbuser=dbuser                             # User of test DB server
 dbpass=password                           # DB user password
 dbconf="-U $dbuser -h $dbhost -p $dbport" # DB connection parameters
-
+slimit=                                   # Rsync speed limit
 dmeror=(''
     ' ___ __  __ ___         _    \n'               
     '|   \  \/  | _ \ ___ __| |_  \n'  
@@ -59,7 +58,7 @@ dberor=(''
 download () {
     rerr=
     for j in {0..9}; {
-        rerr=$(rsync -Pqz $addr:"$bkpath/$dump" "$dmpdir/$localdump" 2>&1 > /dev/null) \
+        rerr=$(rsync --bwlimit=$slimit -Pqz $addr:"$bkpath/$dump" "$dmpdir/$localdump" 2>&1 > /dev/null) \
             && { printf "\nDownload complete.\n"; return 0; } \
             || sleep 5
     }
